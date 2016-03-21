@@ -1,42 +1,17 @@
-﻿#r "./packages/FSharp.Compiler.Service/lib/net45/FSharp.Compiler.Service.dll"
-#load "fileSystem.fsx"
+﻿#load "compiler.fsx"
 
-open System
-open Microsoft.FSharp.Compiler.AbstractIL.Internal.Library
-open Microsoft.FSharp.Compiler.SourceCodeServices
-open FileSystem
-
-let checker = FSharpChecker.Create(keepAssemblyContents=true)
-let opts = {
-  FSharpProjectOptions.IsIncompleteTypeCheckEnvironment = false
-  ProjectFileName = "project.fsproj"
-  ProjectFileNames = [|"file.fs"|]
-  OtherOptions = [|"--out:x.dll"; "--target:library"|]
-  ReferencedProjects = [||]
-  UseScriptResolutionRules = false
-  LoadTime = DateTime.Now
-  UnresolvedReferences = None }
-
-let srcBytes = 
-  """
-      module X
+let error = Compiler.getTast
+                """
+                  module X
     
-      let f x y = x+y
-      let g = f 1
-      let h = (g 2) + 3
-  """ 
-  |> System.Text.Encoding.UTF8.GetBytes
-
-Shim.FileSystem <- makeFileSystem (fun fn -> if fn = "file.fs" then Some srcBytes else None)
-
-let res = checker.ParseAndCheckProject( opts ) |> Async.RunSynchronously
-let ast = res.AssemblyContents.ImplementationFiles
+                  let f x y = x+y
+                  let g = f 1
+                  let h = (g 2) + 3
+                """ 
 
 (*
-val ast : FSharpImplementationFileContents list =
-  [Microsoft.FSharp.Compiler.SourceCodeServices.FSharpImplementationFileContents
-     {Declarations = [Entity
-                        (X,
+val error : FSharpImplementationFileDeclaration list =
+   [Entity (X,
 
       [MemberOrFunctionOrValue
         (val f,[[val x]; [val y]],
@@ -56,10 +31,24 @@ val ast : FSharpImplementationFileContents list =
         Application
           (Call (null,val g,[],[],[]),[],[Const (2,type Microsoft.FSharp.Core.int)]))
         // ^^^^^ no call to (+) and (Const 3) is missing!
-      ])];
-
-      FileName = "file.fs";
-      HasExplicitEntryPoint = false;
-      IsScript = false;
-      QualifiedName = "X";}]
+      ])
 *)
+
+
+let correct1 = Compiler.getTast
+                """
+                  module X
+    
+                  let f x y = x+y
+                  let g = 2
+                  let h = g + 3
+                """ 
+
+let correct2 = Compiler.getTast
+                """
+                  module X
+    
+                  let f x y = x+y
+                  let g x = x + 2
+                  let h = (g 5) + 3
+                """ 

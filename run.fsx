@@ -34,6 +34,17 @@ val error : FSharpImplementationFileDeclaration list =
       ])
 *)
 
+let stillError = Compiler.getTast
+                    """
+                      module X
+    
+                      let f x y = x+y
+                      let g = f 1
+                      let h = (g 2) + 3
+
+                      printfn "%s" h
+                      let z = ()
+                    """ 
 
 let correct1 = Compiler.getTast
                 """
